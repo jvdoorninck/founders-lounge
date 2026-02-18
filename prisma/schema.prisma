@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Founder {
+  id                String   @id @default(cuid())
+  name              String
+  phone             String
+  companyWebsite    String
+  companyPhase      String
+  industry          String?
+  industryEnriched  Boolean  @default(false)
+  lookingFor        String   // JSON array stored as string
+  offering          String   // JSON array stored as string
+  availableSlots    String   // JSON array stored as string
+  createdAt         DateTime @default(now())
+
+  matchesAsA MatchSuggestion[] @relation("FounderA")
+  matchesAsB MatchSuggestion[] @relation("FounderB")
+}
+
+model MatchSuggestion {
+  id            String    @id @default(cuid())
+  founderAId    String
+  founderBId    String
+  score         Int
+  suggestedSlot String
+  reasonForA    String
+  reasonForB    String
+  status        String    @default("suggested") // suggested | confirmed | dismissed
+  createdAt     DateTime  @default(now())
+  confirmedAt   DateTime?
+
+  founderA Founder @relation("FounderA", fields: [founderAId], references: [id])
+  founderB Founder @relation("FounderB", fields: [founderBId], references: [id])
+
+  @@unique([founderAId, founderBId])
+}
