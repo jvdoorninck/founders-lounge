@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { runMatching } from "@/lib/matching";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { name, phone, lookingFor, offering, companyWebsite, companyPhase, availableSlots } = body;
 
-    if (!name || !phone || !companyWebsite || !companyPhase) {
+    if (!name || !phone || !companyPhase) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
     if (!Array.isArray(lookingFor) || lookingFor.length === 0) {
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         phone,
-        companyWebsite,
+        companyWebsite: companyWebsite || "",
         companyPhase,
         lookingFor: JSON.stringify(lookingFor),
         offering: JSON.stringify(offering),
@@ -31,13 +32,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Trigger async enrichment — don't await it
-    const baseUrl = req.nextUrl.origin;
-    fetch(`${baseUrl}/api/enrich`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ founderId: founder.id, website: companyWebsite }),
-    }).catch(() => {});
+    // Trigger async enrichment if website provided
+    if (companyWebsite) {
+      const baseUrl = req.nextUrl.origin;
+      fetch(`${baseUrl}/api/enrich`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ founderId: founder.id, website: companyWebsite }),
+      }).catch(() => {});
+    }
+
+    // Auto-generate matches for new registration
+    runMatching().catch((err) => {
+      console.error("Auto-matching error:", err);
+    });
 
     return NextResponse.json({ success: true, id: founder.id });
   } catch (err) {

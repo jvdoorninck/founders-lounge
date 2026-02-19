@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   LOOKING_FOR_OPTIONS,
   OFFERING_OPTIONS,
@@ -64,7 +65,7 @@ export default function RegisterPage() {
           phone,
           lookingFor,
           offering,
-          companyWebsite,
+          companyWebsite: companyWebsite || "",
           companyPhase,
           availableSlots,
         }),
@@ -91,6 +92,9 @@ export default function RegisterPage() {
           <p className="text-[var(--color-plum-light)] text-lg">
             We&apos;ll text you when we find a great match. Feel free to keep roaming the festival!
           </p>
+          <p className="text-sm text-[var(--color-plum-light)] mt-6 opacity-60">
+            powered by <span className="font-bold">breeze</span>
+          </p>
         </div>
       </main>
     );
@@ -99,12 +103,25 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen pb-16">
       <div className="max-w-lg mx-auto px-5 pt-10">
+        {/* Breeze logo */}
+        <div className="mb-6">
+          <Image
+            src="/breeze-logo.svg"
+            alt="breeze"
+            width={180}
+            height={44}
+            priority
+          />
+        </div>
+
         {/* Header */}
         <div className="mb-8">
-          <p className="text-sm font-medium text-[var(--color-peach-dark)] mb-1 tracking-wide uppercase">breeze</p>
-          <h1 className="font-serif text-4xl leading-tight">Founder Matching</h1>
+          <h1 className="font-serif text-4xl leading-tight">Founder to Founder</h1>
           <p className="text-[var(--color-plum-light)] mt-2">
             Meet fellow founders for 1:1 conversations at Upstream.
+          </p>
+          <p className="text-sm text-[var(--color-plum-light)] mt-1">
+            Powered by <span className="font-bold">Breeze</span>
           </p>
         </div>
 
@@ -142,7 +159,7 @@ export default function RegisterPage() {
         {isFounder === false && (
           <div className="bg-white/50 border border-[var(--color-peach)] rounded-2xl p-5 text-center">
             <p className="text-[var(--color-plum-light)]">
-              The Founders Lounge is for active founders — but enjoy the rest of Upstream! &#128075;
+              This is for active founders — but enjoy the rest of Upstream! &#128075;
             </p>
           </div>
         )}
@@ -224,15 +241,14 @@ export default function RegisterPage() {
               </div>
             </fieldset>
 
-            {/* Company website */}
+            {/* Company website — optional */}
             <div>
               <label htmlFor="website" className="block font-semibold mb-1">
-                Company website
+                Company website <span className="text-sm font-normal text-[var(--color-plum-light)]">(optional)</span>
               </label>
               <input
                 id="website"
                 type="url"
-                required
                 value={companyWebsite}
                 onChange={(e) => setCompanyWebsite(e.target.value)}
                 className="w-full bg-white/70 border border-[var(--color-peach)] rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-plum)] focus:border-transparent placeholder:text-[var(--color-peach-dark)]"
@@ -300,8 +316,12 @@ export default function RegisterPage() {
               disabled={submitting}
               className="w-full bg-[var(--color-plum)] hover:bg-[var(--color-primary-dark)] text-white font-semibold py-4 px-6 rounded-2xl text-lg transition-colors disabled:opacity-50"
             >
-              {submitting ? "Signing you up..." : "Join the Founders Lounge"}
+              {submitting ? "Signing you up..." : "Sign me up"}
             </button>
+
+            <p className="text-center text-sm text-[var(--color-plum-light)]">
+              Powered by <span className="font-bold">Breeze</span>
+            </p>
           </form>
         )}
       </div>

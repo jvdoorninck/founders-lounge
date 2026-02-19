@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -30,9 +30,10 @@ model MatchSuggestion {
   founderBId    String
   score         Int
   suggestedSlot String
-  reasonForA    String
-  reasonForB    String
-  status        String    @default("suggested") // suggested | confirmed | dismissed
+  reasonForA       String
+  reasonForB       String
+  matchmakerReason String    @default("")
+  status           String    @default("suggested") // suggested | confirmed | dismissed | cancelled
   createdAt     DateTime  @default(now())
   confirmedAt   DateTime?
 

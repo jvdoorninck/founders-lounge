@@ -28,37 +28,37 @@ function parseFounder(f: {
   };
 }
 
-function getComplementaryScore(a: FounderData, b: FounderData): { score: number; pairs: [string, string][] } {
-  const pairs: [string, string][] = [];
+function getComplementaryScore(a: FounderData, b: FounderData): { score: number; pairs: [string, string][]; aToBPairs: [string, string][]; bToAPairs: [string, string][] } {
+  const aToBPairs: [string, string][] = [];
+  const bToAPairs: [string, string][] = [];
 
   // Check A's needs vs B's offerings
   for (const [need, offer] of COMPLEMENTARY_PAIRS) {
     if (a.lookingFor.includes(need) && b.offering.includes(offer)) {
-      pairs.push([need, offer]);
+      aToBPairs.push([need, offer]);
     }
   }
   // Check B's needs vs A's offerings
   for (const [need, offer] of COMPLEMENTARY_PAIRS) {
     if (b.lookingFor.includes(need) && a.offering.includes(offer)) {
-      if (!pairs.some(([n, o]) => n === need && o === offer)) {
-        pairs.push([need, offer]);
-      }
+      bToAPairs.push([need, offer]);
     }
   }
 
-  // Both directions checked separately for scoring
-  let aToBCount = 0;
-  let bToACount = 0;
-  for (const [need, offer] of COMPLEMENTARY_PAIRS) {
-    if (a.lookingFor.includes(need) && b.offering.includes(offer)) aToBCount++;
-    if (b.lookingFor.includes(need) && a.offering.includes(offer)) bToACount++;
+  const allPairs = [...aToBPairs];
+  for (const [need, offer] of bToAPairs) {
+    if (!allPairs.some(([n, o]) => n === need && o === offer)) {
+      allPairs.push([need, offer]);
+    }
   }
+
+  const aToBCount = aToBPairs.length;
+  const bToACount = bToAPairs.length;
 
   let score = 0;
   const totalMatches = aToBCount + bToACount;
-  if (totalMatches === 0) return { score: 0, pairs: [] };
+  if (totalMatches === 0) return { score: 0, pairs: [], aToBPairs: [], bToAPairs: [] };
 
-  // Single one-directional match ≈ 10 points, scale up to 40 for many bidirectional
   const bidirectional = Math.min(aToBCount, bToACount) > 0;
   if (bidirectional) {
     score = Math.min(40, 10 + totalMatches * 5);
@@ -66,7 +66,7 @@ function getComplementaryScore(a: FounderData, b: FounderData): { score: number;
     score = Math.min(25, totalMatches * 10);
   }
 
-  return { score, pairs };
+  return { score, pairs: allPairs, aToBPairs, bToAPairs };
 }
 
 function getAvailabilityScore(a: FounderData, b: FounderData): { score: number; overlapping: string[] } {
@@ -78,7 +78,6 @@ function getAvailabilityScore(a: FounderData, b: FounderData): { score: number; 
 }
 
 function getPhaseScore(a: FounderData, b: FounderData): number {
-  // Exception: advice seeker + advice giver in later phase
   const aSeeksAdvice = a.lookingFor.includes("Advice from someone further in the journey");
   const bOffersAdvice = b.offering.includes("Been there, open to give advice");
   const bSeeksAdvice = b.lookingFor.includes("Advice from someone further in the journey");
@@ -110,7 +109,6 @@ function getIndustryScore(a: FounderData, b: FounderData): number {
 
   if (aInd === bInd) return 15;
 
-  // Simple relatedness check
   const techRelated = ["saas", "b2b software", "developer tools", "ai/ml", "devtools", "api"];
   const consumerRelated = ["consumer app", "e-commerce", "marketplace", "d2c"];
   const financeRelated = ["fintech", "insurtech", "banking", "payments"];
@@ -126,13 +124,55 @@ function getIndustryScore(a: FounderData, b: FounderData): number {
   return 0;
 }
 
+function generateMatchmakerReason(
+  a: FounderData,
+  b: FounderData,
+  aToBPairs: [string, string][],
+  bToAPairs: [string, string][],
+  overlapping: string[]
+): string {
+  const parts: string[] = [];
+
+  // Complementary interest explanation
+  if (aToBPairs.length > 0 && bToAPairs.length > 0) {
+    const aNeeds = aToBPairs.map(([need]) => TOPIC_LABELS[need] || need).slice(0, 2).join(" & ");
+    const bNeeds = bToAPairs.map(([need]) => TOPIC_LABELS[need] || need).slice(0, 2).join(" & ");
+    parts.push(`Two-way match: ${a.name.split(" ")[0]} wants ${aNeeds}, ${b.name.split(" ")[0]} wants ${bNeeds}`);
+  } else if (aToBPairs.length > 0) {
+    const aNeeds = aToBPairs.map(([need]) => TOPIC_LABELS[need] || need).slice(0, 2).join(" & ");
+    parts.push(`${a.name.split(" ")[0]} wants ${aNeeds} and ${b.name.split(" ")[0]} can offer that`);
+  } else if (bToAPairs.length > 0) {
+    const bNeeds = bToAPairs.map(([need]) => TOPIC_LABELS[need] || need).slice(0, 2).join(" & ");
+    parts.push(`${b.name.split(" ")[0]} wants ${bNeeds} and ${a.name.split(" ")[0]} can offer that`);
+  }
+
+  // Industry
+  if (a.industry && b.industry && a.industry !== "unknown" && b.industry !== "unknown") {
+    if (a.industry.toLowerCase() === b.industry.toLowerCase()) {
+      parts.push(`Same industry (${a.industry})`);
+    }
+  }
+
+  // Phase
+  const aPhase = PHASE_ORDER[a.companyPhase] ?? 2;
+  const bPhase = PHASE_ORDER[b.companyPhase] ?? 2;
+  if (aPhase === bPhase) {
+    parts.push(`Both ${a.companyPhase}`);
+  } else if (Math.abs(aPhase - bPhase) <= 1) {
+    parts.push(`Similar phase`);
+  }
+
+  // Availability
+  parts.push(`${overlapping.length} overlapping slot${overlapping.length > 1 ? "s" : ""}`);
+
+  return parts.join(". ");
+}
+
 function generateReason(
   recipient: FounderData,
   other: FounderData,
-  complementaryPairs: [string, string][]
 ): string {
-  // Find the strongest pair for this recipient
-  // Check what the recipient is looking for that the other offers
+  // Find what the recipient is looking for that the other offers
   const recipientMatches: [string, string][] = [];
   for (const [need, offer] of COMPLEMENTARY_PAIRS) {
     if (recipient.lookingFor.includes(need) && other.offering.includes(offer)) {
@@ -209,11 +249,22 @@ function generateReason(
   return "We think you two would have a great conversation based on your complementary backgrounds.";
 }
 
+interface ScoredPair {
+  a: FounderData;
+  b: FounderData;
+  totalScore: number;
+  complementaryScore: number;
+  aToBPairs: [string, string][];
+  bToAPairs: [string, string][];
+  overlapping: string[];
+  suggestedSlot: string;
+}
+
 export async function runMatching(): Promise<{ generated: number }> {
   const allFounders = await prisma.founder.findMany();
   const founders = allFounders.map(parseFounder);
 
-  // Get existing match pairs (to avoid duplicates)
+  // Get existing match pairs (to avoid duplicates) — any status
   const existingMatches = await prisma.matchSuggestion.findMany({
     select: { founderAId: true, founderBId: true },
   });
@@ -221,86 +272,127 @@ export async function runMatching(): Promise<{ generated: number }> {
     existingMatches.map((m) => [m.founderAId, m.founderBId].sort().join("|"))
   );
 
-  // Get confirmed matches to track used slots
-  const confirmedMatches = await prisma.matchSuggestion.findMany({
-    where: { status: "confirmed" },
-    select: { founderAId: true, founderBId: true, suggestedSlot: true },
+  // Get active matches (suggested or confirmed) to count per-founder allocation
+  const activeMatches = await prisma.matchSuggestion.findMany({
+    where: { status: { in: ["suggested", "confirmed"] } },
+    select: { founderAId: true, founderBId: true, suggestedSlot: true, status: true },
   });
 
-  // Build map of used slots per founder
+  // Count how many active matches (suggested + confirmed) each founder already has
+  const activeCount: Record<string, number> = {};
+  // Count only confirmed
+  const confirmedCount: Record<string, number> = {};
+  // Track used slots from confirmed matches
   const usedSlots: Record<string, Set<string>> = {};
-  for (const m of confirmedMatches) {
-    if (!usedSlots[m.founderAId]) usedSlots[m.founderAId] = new Set();
-    if (!usedSlots[m.founderBId]) usedSlots[m.founderBId] = new Set();
-    usedSlots[m.founderAId].add(m.suggestedSlot);
-    usedSlots[m.founderBId].add(m.suggestedSlot);
+
+  for (const m of activeMatches) {
+    activeCount[m.founderAId] = (activeCount[m.founderAId] || 0) + 1;
+    activeCount[m.founderBId] = (activeCount[m.founderBId] || 0) + 1;
+    if (m.status === "confirmed") {
+      confirmedCount[m.founderAId] = (confirmedCount[m.founderAId] || 0) + 1;
+      confirmedCount[m.founderBId] = (confirmedCount[m.founderBId] || 0) + 1;
+      if (!usedSlots[m.founderAId]) usedSlots[m.founderAId] = new Set();
+      if (!usedSlots[m.founderBId]) usedSlots[m.founderBId] = new Set();
+      usedSlots[m.founderAId].add(m.suggestedSlot);
+      usedSlots[m.founderBId].add(m.suggestedSlot);
+    }
   }
 
-  // Get available slots (original minus confirmed)
-  function getAvailableSlots(founder: FounderData): string[] {
+  function getAvailableSlotsForFounder(founder: FounderData): string[] {
     const used = usedSlots[founder.id];
     if (!used) return founder.availableSlots;
     return founder.availableSlots.filter((s) => !used.has(s));
   }
 
-  let generated = 0;
+  // Step 1: Score ALL valid pairs
+  const allPairs: ScoredPair[] = [];
 
   for (let i = 0; i < founders.length; i++) {
     for (let j = i + 1; j < founders.length; j++) {
       const a = founders[i];
       const b = founders[j];
 
-      // Skip if already matched
       const pairKey = [a.id, b.id].sort().join("|");
       if (existingPairs.has(pairKey)) continue;
 
-      // Use available (non-confirmed) slots
-      const aWithAvailable = { ...a, availableSlots: getAvailableSlots(a) };
-      const bWithAvailable = { ...b, availableSlots: getAvailableSlots(b) };
+      // Skip if either already has 2 confirmed
+      if ((confirmedCount[a.id] || 0) >= 2) continue;
+      if ((confirmedCount[b.id] || 0) >= 2) continue;
 
-      // Calculate scores
-      const { score: complementaryScore, pairs } = getComplementaryScore(aWithAvailable, bWithAvailable);
+      const aWithAvailable = { ...a, availableSlots: getAvailableSlotsForFounder(a) };
+      const bWithAvailable = { ...b, availableSlots: getAvailableSlotsForFounder(b) };
+
+      const { score: complementaryScore, aToBPairs, bToAPairs } = getComplementaryScore(aWithAvailable, bWithAvailable);
       const { score: availabilityScore, overlapping } = getAvailabilityScore(aWithAvailable, bWithAvailable);
 
-      // No availability overlap = disqualify
       if (overlapping.length === 0) continue;
-
-      // No complementary match = skip
       if (complementaryScore === 0) continue;
 
       const phaseScore = getPhaseScore(aWithAvailable, bWithAvailable);
       const industryScore = getIndustryScore(aWithAvailable, bWithAvailable);
-
       const totalScore = complementaryScore + availabilityScore + phaseScore + industryScore;
 
-      // Only suggest if score is meaningful
-      if (totalScore < 15) continue;
+      if (totalScore < 25) continue;
 
-      // Pick earliest overlapping slot
-      const suggestedSlot = overlapping[0];
-
-      // Generate personalized reasons
-      const reasonForA = generateReason(aWithAvailable, bWithAvailable, pairs);
-      const reasonForB = generateReason(bWithAvailable, aWithAvailable, pairs);
-
-      // Store with founderA having the lower sorted ID for consistency
-      const [founderAId, founderBId] = [a.id, b.id].sort();
-      const [rA, rB] = founderAId === a.id ? [reasonForA, reasonForB] : [reasonForB, reasonForA];
-
-      await prisma.matchSuggestion.create({
-        data: {
-          founderAId,
-          founderBId,
-          score: totalScore,
-          suggestedSlot,
-          reasonForA: rA,
-          reasonForB: rB,
-          status: "suggested",
-        },
+      allPairs.push({
+        a: aWithAvailable, b: bWithAvailable,
+        totalScore, complementaryScore,
+        aToBPairs, bToAPairs, overlapping,
+        suggestedSlot: overlapping[0],
       });
-
-      generated++;
     }
+  }
+
+  // Sort by score descending
+  allPairs.sort((x, y) => y.totalScore - x.totalScore);
+
+  // Step 2: Greedy assignment — each founder gets at most 1 new suggestion.
+  // Founders who already have a suggestion or confirmed match get a 2nd only if
+  // everyone else has been served first.
+  const newSuggestionCount: Record<string, number> = {};
+  let generated = 0;
+
+  // Target: give 1 suggestion to founders who have 0 active matches
+  const selectedPairs: ScoredPair[] = [];
+
+  for (const pair of allPairs) {
+    const aTotal = (activeCount[pair.a.id] || 0) + (newSuggestionCount[pair.a.id] || 0);
+    const bTotal = (activeCount[pair.b.id] || 0) + (newSuggestionCount[pair.b.id] || 0);
+
+    // Each founder gets at most 1 suggestion from this run
+    if ((newSuggestionCount[pair.a.id] || 0) >= 1) continue;
+    if ((newSuggestionCount[pair.b.id] || 0) >= 1) continue;
+
+    // Total active (existing + new) capped at 2
+    if (aTotal >= 2) continue;
+    if (bTotal >= 2) continue;
+
+    selectedPairs.push(pair);
+    newSuggestionCount[pair.a.id] = (newSuggestionCount[pair.a.id] || 0) + 1;
+    newSuggestionCount[pair.b.id] = (newSuggestionCount[pair.b.id] || 0) + 1;
+  }
+
+  // Step 3: Write the selected pairs to the database
+  for (const pair of selectedPairs) {
+    const reasonForA = generateReason(pair.a, pair.b);
+    const reasonForB = generateReason(pair.b, pair.a);
+    const matchmakerReason = generateMatchmakerReason(pair.a, pair.b, pair.aToBPairs, pair.bToAPairs, pair.overlapping);
+
+    const [founderAId, founderBId] = [pair.a.id, pair.b.id].sort();
+    const [rA, rB] = founderAId === pair.a.id ? [reasonForA, reasonForB] : [reasonForB, reasonForA];
+
+    await prisma.matchSuggestion.create({
+      data: {
+        founderAId, founderBId,
+        score: pair.totalScore,
+        suggestedSlot: pair.suggestedSlot,
+        reasonForA: rA, reasonForB: rB,
+        matchmakerReason,
+        status: "suggested",
+      },
+    });
+
+    generated++;
   }
 
   return { generated };

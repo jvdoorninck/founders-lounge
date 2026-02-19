@@ -25,6 +25,7 @@ interface MatchSuggestion {
   suggestedSlot: string;
   reasonForA: string;
   reasonForB: string;
+  matchmakerReason: string;
   status: string;
   founderA: Founder;
   founderB: Founder;
@@ -77,7 +78,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!authed) return;
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [authed, fetchData]);
 
@@ -129,6 +130,16 @@ export default function DashboardPage() {
     fetchData();
   }
 
+  async function handleCancel(matchId: string) {
+    if (!confirm("Cancel this match? Both founders will become available for new matches.")) return;
+    await fetch("/api/dashboard/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId }),
+    });
+    fetchData();
+  }
+
   async function handleUpdateIndustry(founderId: string) {
     const industry = prompt("Enter industry tag:");
     if (!industry) return;
@@ -140,8 +151,21 @@ export default function DashboardPage() {
     fetchData();
   }
 
-  function copySMS(founderName: string, reason: string, slot: string, phone: string, matchId: string, side: string) {
-    const msg = `Hi ${founderName}! We found you a match at the Founders Lounge.\n\n${reason}\n\nWe suggest meeting at ${slot} at the Founders Lounge. Head over and we'll introduce you!\n\nCan't make that time? Just reply and we'll reschedule.`;
+  function copySMS(
+    founderName: string,
+    reason: string,
+    slot: string,
+    phone: string,
+    matchId: string,
+    side: string,
+    isOfferingAngle: boolean
+  ) {
+    let msg: string;
+    if (isOfferingAngle) {
+      msg = `Hi ${founderName}! We found someone at the Founders Lounge who could really use your help.\n\n${reason}\n\nCould you be at the Founders Lounge at ${slot}? We'll introduce you two.\n\nIf that time doesn't work, just reply and we'll reschedule. See you there!`;
+    } else {
+      msg = `Hi ${founderName}! We found you a match at the Founders Lounge.\n\n${reason}\n\nCan you be at the Founders Lounge at ${slot}? We'll introduce you!\n\nIf that time doesn't work, just reply and we'll reschedule. See you there!`;
+    }
     navigator.clipboard.writeText(msg);
     setCopied(`${matchId}-${side}`);
     setTimeout(() => setCopied(null), 2000);
@@ -190,13 +214,14 @@ export default function DashboardPage() {
           <div>
             <p className="text-xs font-medium text-[var(--color-peach-dark)] tracking-wide uppercase">breeze</p>
             <h1 className="font-serif text-2xl">Founder Matching</h1>
+            <p className="text-xs text-[var(--color-plum-light)] mt-0.5">Matches auto-generate on new registrations</p>
           </div>
           <button
             onClick={handleGenerateMatches}
             disabled={matching}
-            className="bg-[var(--color-plum)] text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50 hover:bg-[var(--color-primary-dark)] transition-colors"
+            className="bg-white/60 text-[var(--color-plum)] border border-[var(--color-peach)] px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50 hover:bg-white transition-colors"
           >
-            {matching ? "Matching..." : "Generate new suggestions"}
+            {matching ? "Matching..." : "Re-run matching"}
           </button>
         </div>
 
@@ -234,7 +259,7 @@ export default function DashboardPage() {
           <div className="space-y-4">
             {data.suggestions.length === 0 && (
               <p className="text-[var(--color-plum-light)] text-center py-8">
-                No pending suggestions. Hit &quot;Generate new suggestions&quot; to create some.
+                No pending suggestions. New matches will appear automatically when founders register.
               </p>
             )}
             {data.suggestions.map((s) => (
@@ -259,6 +284,7 @@ export default function DashboardPage() {
                 key={m.id}
                 match={m}
                 onCopySMS={copySMS}
+                onCancel={handleCancel}
                 copied={copied}
               />
             ))}
@@ -274,14 +300,16 @@ export default function DashboardPage() {
                   <div>
                     <p className="font-semibold">{f.name}</p>
                     <p className="text-sm text-[var(--color-plum-light)]">{f.phone}</p>
-                    <a
-                      href={f.companyWebsite}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[var(--color-plum)] underline"
-                    >
-                      {f.companyWebsite}
-                    </a>
+                    {f.companyWebsite && (
+                      <a
+                        href={f.companyWebsite}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-[var(--color-plum)] underline"
+                      >
+                        {f.companyWebsite}
+                      </a>
+                    )}
                   </div>
                   <span className="text-xs bg-[var(--color-peach)]/50 px-2 py-1 rounded-full font-medium">
                     {f.matchCount || 0} matches
@@ -359,6 +387,13 @@ function SuggestionCard({
 
   return (
     <div className="bg-white/70 rounded-2xl border border-[var(--color-peach)] p-4">
+      {/* Matchmaker reason */}
+      {match.matchmakerReason && (
+        <div className="bg-[var(--color-plum)]/5 border border-[var(--color-plum)]/10 rounded-xl px-3 py-2 mb-3">
+          <p className="text-sm text-[var(--color-plum)]">{match.matchmakerReason}</p>
+        </div>
+      )}
+
       {/* Score bar */}
       <div className="flex items-center gap-3 mb-3">
         <div className="flex-1 bg-[var(--color-peach)]/30 rounded-full h-2 overflow-hidden">
@@ -370,14 +405,16 @@ function SuggestionCard({
       <div className="grid md:grid-cols-2 gap-4 mb-3">
         <div>
           <p className="font-semibold text-sm">{match.founderA.name}</p>
-          <a
-            href={match.founderA.companyWebsite}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-[var(--color-plum)] underline"
-          >
-            {match.founderA.companyWebsite}
-          </a>
+          {match.founderA.companyWebsite && (
+            <a
+              href={match.founderA.companyWebsite}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[var(--color-plum)] underline"
+            >
+              {match.founderA.companyWebsite}
+            </a>
+          )}
           <div className="flex flex-wrap gap-1 mt-1">
             <span className="text-xs bg-[var(--color-peach)]/40 px-1.5 py-0.5 rounded-full">
               {match.founderA.companyPhase}
@@ -389,19 +426,24 @@ function SuggestionCard({
             )}
           </div>
           <p className="text-xs text-[var(--color-plum-light)] mt-1">
-            <span className="font-medium">Looking for:</span> {match.founderA.lookingFor.join(", ")}
+            <span className="font-medium">Wants:</span> {match.founderA.lookingFor.join(", ")}
+          </p>
+          <p className="text-xs text-[var(--color-plum-light)] mt-0.5">
+            <span className="font-medium">Offers:</span> {match.founderA.offering.join(", ")}
           </p>
         </div>
         <div>
           <p className="font-semibold text-sm">{match.founderB.name}</p>
-          <a
-            href={match.founderB.companyWebsite}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-[var(--color-plum)] underline"
-          >
-            {match.founderB.companyWebsite}
-          </a>
+          {match.founderB.companyWebsite && (
+            <a
+              href={match.founderB.companyWebsite}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-[var(--color-plum)] underline"
+            >
+              {match.founderB.companyWebsite}
+            </a>
+          )}
           <div className="flex flex-wrap gap-1 mt-1">
             <span className="text-xs bg-[var(--color-peach)]/40 px-1.5 py-0.5 rounded-full">
               {match.founderB.companyPhase}
@@ -413,17 +455,12 @@ function SuggestionCard({
             )}
           </div>
           <p className="text-xs text-[var(--color-plum-light)] mt-1">
-            <span className="font-medium">Looking for:</span> {match.founderB.lookingFor.join(", ")}
+            <span className="font-medium">Wants:</span> {match.founderB.lookingFor.join(", ")}
+          </p>
+          <p className="text-xs text-[var(--color-plum-light)] mt-0.5">
+            <span className="font-medium">Offers:</span> {match.founderB.offering.join(", ")}
           </p>
         </div>
-      </div>
-
-      {/* Match reason */}
-      <div className="bg-[var(--color-peach)]/20 rounded-xl p-3 mb-3 text-sm">
-        <p className="font-medium text-xs text-[var(--color-plum-light)] mb-1">For {match.founderA.name}:</p>
-        <p>{match.reasonForA}</p>
-        <p className="font-medium text-xs text-[var(--color-plum-light)] mb-1 mt-2">For {match.founderB.name}:</p>
-        <p>{match.reasonForB}</p>
       </div>
 
       {/* Slot + actions */}
@@ -459,23 +496,38 @@ function SuggestionCard({
 function ConfirmedCard({
   match,
   onCopySMS,
+  onCancel,
   copied,
 }: {
   match: MatchSuggestion;
-  onCopySMS: (name: string, reason: string, slot: string, phone: string, matchId: string, side: string) => void;
+  onCopySMS: (name: string, reason: string, slot: string, phone: string, matchId: string, side: string, isOfferingAngle: boolean) => void;
+  onCancel: (matchId: string) => void;
   copied: string | null;
 }) {
+  // Determine if a founder's angle is primarily "offering" (the reason is about what the other needs from them)
+  function isOfferingAngle(reason: string): boolean {
+    return reason.includes("looking for someone with your expertise") || reason.includes("could really use your");
+  }
+
   return (
     <div className="bg-white/70 rounded-2xl border border-green-200 p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
           Confirmed — {match.suggestedSlot}
         </span>
-        {match.confirmedAt && (
-          <span className="text-xs text-[var(--color-plum-light)]">
-            {new Date(match.confirmedAt).toLocaleTimeString()}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {match.confirmedAt && (
+            <span className="text-xs text-[var(--color-plum-light)]">
+              {new Date(match.confirmedAt).toLocaleTimeString()}
+            </span>
+          )}
+          <button
+            onClick={() => onCancel(match.id)}
+            className="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full font-medium hover:bg-red-100 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
 
       {/* Founder A */}
@@ -493,7 +545,8 @@ function ConfirmedCard({
                 match.suggestedSlot,
                 match.founderA.phone,
                 match.id,
-                "A"
+                "A",
+                isOfferingAngle(match.reasonForA)
               )
             }
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
@@ -523,7 +576,8 @@ function ConfirmedCard({
                 match.suggestedSlot,
                 match.founderB.phone,
                 match.id,
-                "B"
+                "B",
+                isOfferingAngle(match.reasonForB)
               )
             }
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
