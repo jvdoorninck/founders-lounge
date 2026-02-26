@@ -51,6 +51,17 @@ export const PHASE_ORDER: Record<string, number> = {
   "Exited / post-exit": 5,
 };
 
+export const INDUSTRY_TRACK_OPTIONS = [
+  "Port & Maritime",
+  "Health & Wellbeing",
+  "Energy & Climate",
+  "AI & Data",
+  "Fintech & Legal",
+  "Enterprise Software & Infrastructure",
+  "Consumer & Lifestyle",
+  "Other",
+] as const;
+
 export function getEventSlots(): string[] {
   const slots = process.env.EVENT_SLOTS;
   if (!slots) {
