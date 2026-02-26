@@ -252,7 +252,7 @@ export default function RegisterPage() {
               </label>
               <input
                 id="website"
-                type="url"
+                type="text"
                 value={companyWebsite}
                 onChange={(e) => setCompanyWebsite(e.target.value)}
                 className="w-full bg-white/70 border border-[var(--color-peach)] rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-plum)] focus:border-transparent placeholder:text-[var(--color-peach-dark)]"
