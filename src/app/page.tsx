@@ -56,7 +56,11 @@ export default function RegisterPage() {
       setError("Please select your company phase.");
       return;
     }
-
+    if (industryTrack.length === 0) {
+      setError("Please select an industry track.");
+      return;
+    }
+    
     setSubmitting(true);
     try {
       const res = await fetch("/api/register", {
@@ -74,6 +78,7 @@ export default function RegisterPage() {
   : "",
           companyPhase,
           availableSlots,
+          industryTrack,
         }),
       });
       if (!res.ok) {
@@ -285,6 +290,29 @@ export default function RegisterPage() {
               </div>
             </fieldset>
 
+{/* Industry track — tappable pills */}
+<fieldset>
+  <legend className="font-semibold mb-2">
+    Industry track
+  </legend>
+  <div className="flex flex-wrap gap-2">
+    {INDUSTRY_TRACK_OPTIONS.map((track) => (
+      <button
+        key={track}
+        type="button"
+        onClick={() => toggleItem(industryTrack, track, setIndustryTrack)}
+        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+          industryTrack.includes(track)
+            ? "bg-[var(--color-plum)] text-white"
+            : "bg-white/60 text-[var(--color-plum)] hover:bg-white"
+        }`}
+      >
+        {track}
+      </button>
+    ))}
+  </div>
+</fieldset>
+            
             {/* Time slots */}
             <fieldset>
               <legend className="font-semibold mb-2">
