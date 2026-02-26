@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [offering, setOffering] = useState<string[]>([]);
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [companyPhase, setCompanyPhase] = useState("");
+  const [industryTrack, setIndustryTrack] = useState<string[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [eventSlots, setEventSlots] = useState<string[]>([]);
 
