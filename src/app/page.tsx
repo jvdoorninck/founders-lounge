@@ -65,7 +65,11 @@ export default function RegisterPage() {
           phone,
           lookingFor,
           offering,
-          companyWebsite: companyWebsite || "",
+         companyWebsite: companyWebsite
+  ? companyWebsite.startsWith("http://") || companyWebsite.startsWith("https://")
+    ? companyWebsite
+    : "https://" + companyWebsite
+  : "",
           companyPhase,
           availableSlots,
         }),
