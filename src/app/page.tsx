@@ -6,6 +6,7 @@ import {
   LOOKING_FOR_OPTIONS,
   OFFERING_OPTIONS,
   PHASE_OPTIONS,
+  INDUSTRY_TRACK_OPTIONS,
 } from "@/lib/constants";
 
 export default function RegisterPage() {
