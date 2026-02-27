@@ -45,6 +45,7 @@ export async function GET() {
       ...f,
       lookingFor: JSON.parse(f.lookingFor),
       offering: JSON.parse(f.offering),
+      industryTrack: JSON.parse(f.industryTrack || "[]"),
       availableSlots: JSON.parse(f.availableSlots),
       matchCount: matchCounts[f.id] || 0,
     };

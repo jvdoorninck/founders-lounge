@@ -17,6 +17,7 @@ model Founder {
   industryEnriched  Boolean  @default(false)
   lookingFor        String   // JSON array stored as string
   offering          String   // JSON array stored as string
+  industryTrack     String   @default("[]") // JSON array stored as string
   availableSlots    String   // JSON array stored as string
   createdAt         DateTime @default(now())
 

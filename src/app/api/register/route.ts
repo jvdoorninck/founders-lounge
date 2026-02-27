@@ -5,7 +5,7 @@ import { runMatching } from "@/lib/matching";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, lookingFor, offering, companyWebsite, companyPhase, availableSlots } = body;
+    const { name, phone, lookingFor, offering, companyWebsite, companyPhase, availableSlots, industryTrack } = body;
 
     if (!name || !phone || !companyPhase) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         companyPhase,
         lookingFor: JSON.stringify(lookingFor),
         offering: JSON.stringify(offering),
+        industryTrack: JSON.stringify(Array.isArray(industryTrack) ? industryTrack : []),
         availableSlots: JSON.stringify(availableSlots),
       },
     });
