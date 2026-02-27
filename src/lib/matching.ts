@@ -109,11 +109,15 @@ function getIndustryScore(a: FounderData, b: FounderData): number {
 
   if (aInd === bInd) return 15;
 
-  const techRelated = ["saas", "b2b software", "developer tools", "ai/ml", "devtools", "api"];
-  const consumerRelated = ["consumer app", "e-commerce", "marketplace", "d2c"];
-  const financeRelated = ["fintech", "insurtech", "banking", "payments"];
-  const healthRelated = ["healthcare", "healthtech", "biotech", "medtech"];
-  const groups = [techRelated, consumerRelated, financeRelated, healthRelated];
+const groups = [
+  ["port & maritime"],
+  ["health & wellbeing"],
+  ["energy & climate"],
+  ["ai & data"],
+  ["fintech & legal"],
+  ["enterprise software & infrastructure"],
+  ["consumer & lifestyle"],
+];
 
   for (const group of groups) {
     if (group.some((t) => aInd.includes(t)) && group.some((t) => bInd.includes(t))) {
