@@ -151,6 +151,16 @@ export default function DashboardPage() {
     fetchData();
   }
 
+  async function handleDelete(founderId: string, founderName: string) {
+  if (!confirm(`Delete registration for ${founderName}? This cannot be undone.`)) return;
+  await fetch("/api/dashboard/delete-founder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ founderId }),
+  });
+  fetchData();
+}
+
   function copySMS(
     founderName: string,
     reason: string,
@@ -311,9 +321,17 @@ export default function DashboardPage() {
                       </a>
                     )}
                   </div>
-                  <span className="text-xs bg-[var(--color-peach)]/50 px-2 py-1 rounded-full font-medium">
-                    {f.matchCount || 0} matches
-                  </span>
+                  <div className="flex items-center gap-2">
+  <span className="text-xs bg-[var(--color-peach)]/50 px-2 py-1 rounded-full font-medium">
+    {f.matchCount || 0} matches
+  </span>
+  <button
+    onClick={() => handleDelete(f.id, f.name)}
+    className="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full font-medium hover:bg-red-100 transition-colors"
+  >
+    Delete
+  </button>
+</div>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   <span className="bg-[var(--color-peach)]/40 px-2 py-0.5 rounded-full">{f.companyPhase}</span>
