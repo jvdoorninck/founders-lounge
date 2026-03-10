@@ -9,6 +9,7 @@ interface Founder {
   companyWebsite: string;
   companyPhase: string;
   industry: string | null;
+  industryTrack: string[];
   industryEnriched: boolean;
   lookingFor: string[];
   offering: string[];
@@ -335,16 +336,20 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   <span className="bg-[var(--color-peach)]/40 px-2 py-0.5 rounded-full">{f.companyPhase}</span>
-                  {f.industry ? (
+                  {f.industry && f.industry !== "unknown" ? (
                     <span
-                      className={`px-2 py-0.5 rounded-full cursor-pointer ${
-                        f.industryEnriched ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
-                      }`}
-                      onClick={() => !f.industryEnriched && handleUpdateIndustry(f.id)}
-                      title={!f.industryEnriched ? "Click to set industry" : ""}
+                      className="px-2 py-0.5 rounded-full cursor-pointer bg-green-100 text-green-800"
+                      title={f.industry}
                     >
                       {f.industry}
-                      {!f.industryEnriched && " (click to edit)"}
+                    </span>
+                  ) : f.industryTrack?.length > 0 ? (
+                    <span
+                      className="px-2 py-0.5 rounded-full cursor-pointer bg-amber-100 text-amber-800"
+                      onClick={() => handleUpdateIndustry(f.id)}
+                      title="Click to set enriched industry"
+                    >
+                      {f.industryTrack.join(", ")} (click to enrich)
                     </span>
                   ) : (
                     <button
@@ -437,9 +442,13 @@ function SuggestionCard({
             <span className="text-xs bg-[var(--color-peach)]/40 px-1.5 py-0.5 rounded-full">
               {match.founderA.companyPhase}
             </span>
-            {match.founderA.industry && (
+            {match.founderA.industry && match.founderA.industry !== "unknown" ? (
               <span className="text-xs bg-[var(--color-plum)]/10 px-1.5 py-0.5 rounded-full">
                 {match.founderA.industry}
+              </span>
+            ) : match.founderA.industryTrack?.length > 0 && (
+              <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
+                {match.founderA.industryTrack.join(", ")}
               </span>
             )}
           </div>
@@ -466,9 +475,13 @@ function SuggestionCard({
             <span className="text-xs bg-[var(--color-peach)]/40 px-1.5 py-0.5 rounded-full">
               {match.founderB.companyPhase}
             </span>
-            {match.founderB.industry && (
+            {match.founderB.industry && match.founderB.industry !== "unknown" ? (
               <span className="text-xs bg-[var(--color-plum)]/10 px-1.5 py-0.5 rounded-full">
                 {match.founderB.industry}
+              </span>
+            ) : match.founderB.industryTrack?.length > 0 && (
+              <span className="text-xs bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full">
+                {match.founderB.industryTrack.join(", ")}
               </span>
             )}
           </div>
