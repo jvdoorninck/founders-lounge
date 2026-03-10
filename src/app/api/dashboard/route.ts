@@ -59,12 +59,14 @@ export async function GET() {
         lookingFor: JSON.parse(s.founderA.lookingFor),
         offering: JSON.parse(s.founderA.offering),
         availableSlots: JSON.parse(s.founderA.availableSlots),
+        industryTrack: JSON.parse(s.founderA.industryTrack || "[]"),
       },
       founderB: {
         ...s.founderB,
         lookingFor: JSON.parse(s.founderB.lookingFor),
         offering: JSON.parse(s.founderB.offering),
         availableSlots: JSON.parse(s.founderB.availableSlots),
+        industryTrack: JSON.parse(s.founderB.industryTrack || "[]"),
       },
     };
   }
