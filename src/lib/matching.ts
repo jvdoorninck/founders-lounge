@@ -6,6 +6,7 @@ interface FounderData {
   name: string;
   companyPhase: string;
   industry: string | null;
+  industryTrack: string[];
   lookingFor: string[];
   offering: string[];
   availableSlots: string[];
@@ -16,12 +17,14 @@ function parseFounder(f: {
   name: string;
   companyPhase: string;
   industry: string | null;
+  industryTrack: string;
   lookingFor: string;
   offering: string;
   availableSlots: string;
 }): FounderData {
   return {
     ...f,
+    industryTrack: JSON.parse(f.industryTrack || "[]"),
     lookingFor: JSON.parse(f.lookingFor),
     offering: JSON.parse(f.offering),
     availableSlots: JSON.parse(f.availableSlots),
@@ -100,32 +103,43 @@ function getPhaseScore(a: FounderData, b: FounderData): number {
   return 0;
 }
 
-function getIndustryScore(a: FounderData, b: FounderData): number {
-  if (!a.industry || !b.industry) return 0;
-  if (a.industry === "unknown" || b.industry === "unknown") return 0;
+function getIndustryScore(a: FounderData, b: FounderData): { score: number; sharedTracks: string[] } {
+  const groups = [
+    ["port & maritime"],
+    ["health & wellbeing"],
+    ["energy & climate"],
+    ["ai & data"],
+    ["fintech & legal"],
+    ["enterprise software & infrastructure"],
+    ["consumer & lifestyle"],
+  ];
 
-  const aInd = a.industry.toLowerCase();
-  const bInd = b.industry.toLowerCase();
+  const aEnriched = a.industry && a.industry !== "unknown";
+  const bEnriched = b.industry && b.industry !== "unknown";
 
-  if (aInd === bInd) return 15;
+  if (aEnriched && bEnriched) {
+    const aInd = a.industry!.toLowerCase();
+    const bInd = b.industry!.toLowerCase();
 
-const groups = [
-  ["port & maritime"],
-  ["health & wellbeing"],
-  ["energy & climate"],
-  ["ai & data"],
-  ["fintech & legal"],
-  ["enterprise software & infrastructure"],
-  ["consumer & lifestyle"],
-];
+    if (aInd === bInd) return { score: 15, sharedTracks: [] };
 
-  for (const group of groups) {
-    if (group.some((t) => aInd.includes(t)) && group.some((t) => bInd.includes(t))) {
-      return 10;
+    for (const group of groups) {
+      if (group.some((t) => aInd.includes(t)) && group.some((t) => bInd.includes(t))) {
+        return { score: 10, sharedTracks: [] };
+      }
     }
+
+    return { score: 0, sharedTracks: [] };
   }
 
-  return 0;
+  // Fall back to industryTrack (user-selected during registration)
+  const aTracks = a.industryTrack.filter((t) => t !== "Other");
+  const bTracks = b.industryTrack.filter((t) => t !== "Other");
+  const sharedTracks = aTracks.filter((t) => bTracks.includes(t));
+
+  if (sharedTracks.length >= 2) return { score: 10, sharedTracks };
+  if (sharedTracks.length === 1) return { score: 8, sharedTracks };
+  return { score: 0, sharedTracks: [] };
 }
 
 function generateMatchmakerReason(
@@ -133,7 +147,8 @@ function generateMatchmakerReason(
   b: FounderData,
   aToBPairs: [string, string][],
   bToAPairs: [string, string][],
-  overlapping: string[]
+  overlapping: string[],
+  sharedTracks: string[]
 ): string {
   const parts: string[] = [];
 
@@ -155,6 +170,8 @@ function generateMatchmakerReason(
     if (a.industry.toLowerCase() === b.industry.toLowerCase()) {
       parts.push(`Same industry (${a.industry})`);
     }
+  } else if (sharedTracks.length > 0) {
+    parts.push(`Shared industry track${sharedTracks.length > 1 ? "s" : ""}: ${sharedTracks.join(", ")}`);
   }
 
   // Phase
@@ -261,6 +278,7 @@ interface ScoredPair {
   aToBPairs: [string, string][];
   bToAPairs: [string, string][];
   overlapping: string[];
+  sharedTracks: string[];
   suggestedSlot: string;
 }
 
@@ -333,7 +351,7 @@ export async function runMatching(): Promise<{ generated: number }> {
       if (complementaryScore === 0) continue;
 
       const phaseScore = getPhaseScore(aWithAvailable, bWithAvailable);
-      const industryScore = getIndustryScore(aWithAvailable, bWithAvailable);
+      const { score: industryScore, sharedTracks } = getIndustryScore(aWithAvailable, bWithAvailable);
       const totalScore = complementaryScore + availabilityScore + phaseScore + industryScore;
 
       if (totalScore < 25) continue;
@@ -341,7 +359,7 @@ export async function runMatching(): Promise<{ generated: number }> {
       allPairs.push({
         a: aWithAvailable, b: bWithAvailable,
         totalScore, complementaryScore,
-        aToBPairs, bToAPairs, overlapping,
+        aToBPairs, bToAPairs, overlapping, sharedTracks,
         suggestedSlot: overlapping[0],
       });
     }
@@ -380,7 +398,7 @@ export async function runMatching(): Promise<{ generated: number }> {
   for (const pair of selectedPairs) {
     const reasonForA = generateReason(pair.a, pair.b);
     const reasonForB = generateReason(pair.b, pair.a);
-    const matchmakerReason = generateMatchmakerReason(pair.a, pair.b, pair.aToBPairs, pair.bToAPairs, pair.overlapping);
+    const matchmakerReason = generateMatchmakerReason(pair.a, pair.b, pair.aToBPairs, pair.bToAPairs, pair.overlapping, pair.sharedTracks);
 
     const [founderAId, founderBId] = [pair.a.id, pair.b.id].sort();
     const [rA, rB] = founderAId === pair.a.id ? [reasonForA, reasonForB] : [reasonForB, reasonForA];
