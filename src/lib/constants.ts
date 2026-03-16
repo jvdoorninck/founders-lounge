@@ -68,10 +68,9 @@ export function getEventSlots(): string[] {
     ? slots.split(",").map((s) => s.trim())
     : ["10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00",
        "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00"];
-  if (!base.includes("Founders Get Together April 10th")) {
-    base.push("Founders Get Together April 10th");
-  }
-  return base;
+  const extra = "Founders Get Together April 10th";
+  const filtered = base.filter((s) => s !== extra);
+  return [extra, ...filtered];
 }
 
 // Short labels for match reason generation
