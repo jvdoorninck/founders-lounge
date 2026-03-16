@@ -64,14 +64,14 @@ export const INDUSTRY_TRACK_OPTIONS = [
 
 export function getEventSlots(): string[] {
   const slots = process.env.EVENT_SLOTS;
-  if (!slots) {
-    return [
-      "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00",
-      "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00",
-      "Founders Get Together April 10th",
-    ];
+  const base = slots
+    ? slots.split(",").map((s) => s.trim())
+    : ["10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00",
+       "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00"];
+  if (!base.includes("Founders Get Together April 10th")) {
+    base.push("Founders Get Together April 10th");
   }
-  return slots.split(",").map((s) => s.trim());
+  return base;
 }
 
 // Short labels for match reason generation
