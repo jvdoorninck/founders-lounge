@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: "Breeze Founder Matching",
-  description: "Meet your next great founder match at Upstream festival",
+  description: "Meet your next great founder match at {{EVENT_NAME}}",
 };
 
 export default function RootLayout({

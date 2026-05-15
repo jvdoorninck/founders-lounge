@@ -101,7 +101,7 @@ export default function RegisterPage() {
           <div className="text-6xl mb-4">&#127881;</div>
           <h1 className="font-serif text-3xl mb-3">You&apos;re in!</h1>
           <p className="text-[var(--color-plum-light)] text-lg">
-            We&apos;ll text you when we find a great match. Feel free to keep roaming the festival!
+            We&apos;ll text you when we find a great match. Feel free to keep roaming the event!
           </p>
           <p className="text-sm text-[var(--color-plum-light)] mt-6 opacity-60">
             powered by <span className="font-bold">breeze</span>
@@ -129,7 +129,7 @@ export default function RegisterPage() {
         <div className="mb-8">
           <h1 className="font-serif text-4xl leading-tight">Founder to Founder</h1>
           <p className="text-[var(--color-plum-light)] mt-2">
-            Meet fellow founders for 1:1 conversations at Upstream.
+            Meet fellow founders for 1:1 conversations at {{EVENT_NAME}}.
           </p>
           <p className="text-sm text-[var(--color-plum-light)] mt-1">
             Powered by <span className="font-bold">Breeze</span>
@@ -170,7 +170,7 @@ export default function RegisterPage() {
         {isFounder === false && (
           <div className="bg-white/50 border border-[var(--color-peach)] rounded-2xl p-5 text-center">
             <p className="text-[var(--color-plum-light)]">
-              This is for active founders — but enjoy the rest of Upstream! &#128075;
+              This is for active founders — but enjoy the rest of {{EVENT_NAME}}! &#128075;
             </p>
           </div>
         )}
