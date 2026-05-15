@@ -341,6 +341,13 @@ export async function runMatching(): Promise<{ generated: number }> {
       if ((confirmedCount[a.id] || 0) >= 2) continue;
       if ((confirmedCount[b.id] || 0) >= 2) continue;
 
+      // Skip pairs where both are seeking advice but neither can give it
+      const aSeeksAdvice = a.lookingFor.includes("Advice from someone further in the journey");
+      const bSeeksAdvice = b.lookingFor.includes("Advice from someone further in the journey");
+      const aOffersAdvice = a.offering.includes("Been there, open to give advice");
+      const bOffersAdvice = b.offering.includes("Been there, open to give advice");
+      if (aSeeksAdvice && bSeeksAdvice && !aOffersAdvice && !bOffersAdvice) continue;
+
       const aWithAvailable = { ...a, availableSlots: getAvailableSlotsForFounder(a) };
       const bWithAvailable = { ...b, availableSlots: getAvailableSlotsForFounder(b) };
 

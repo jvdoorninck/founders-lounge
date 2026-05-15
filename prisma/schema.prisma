@@ -18,8 +18,9 @@ model Founder {
   lookingFor        String   // JSON array stored as string
   offering          String   // JSON array stored as string
   industryTrack     String   @default("[]") // JSON array stored as string
-  availableSlots    String   // JSON array stored as string
-  createdAt         DateTime @default(now())
+  availableSlots              String   // JSON array stored as string
+  interestedInFounderCircle   Boolean  @default(false)
+  createdAt                   DateTime @default(now())
 
   matchesAsA MatchSuggestion[] @relation("FounderA")
   matchesAsB MatchSuggestion[] @relation("FounderB")

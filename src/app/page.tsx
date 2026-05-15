@@ -24,6 +24,7 @@ export default function RegisterPage() {
   const [industryTrack, setIndustryTrack] = useState<string[]>([]);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [eventSlots, setEventSlots] = useState<string[]>([]);
+  const [interestedInFounderCircle, setInterestedInFounderCircle] = useState(false);
 
   useEffect(() => {
     fetch("/api/slots")
@@ -79,6 +80,7 @@ export default function RegisterPage() {
           companyPhase,
           availableSlots,
           industryTrack,
+          interestedInFounderCircle,
         }),
       });
       if (!res.ok) {
@@ -338,6 +340,19 @@ export default function RegisterPage() {
                 We&apos;ll notify you by SMS if we have a match. Feel free to keep roaming — no need to block these slots.
               </p>
             </fieldset>
+
+            {/* Founder Circle opt-in */}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={interestedInFounderCircle}
+                onChange={(e) => setInterestedInFounderCircle(e.target.checked)}
+                className="w-4 h-4 mt-0.5 accent-[var(--color-plum)] rounded"
+              />
+              <span className="text-[15px] text-[var(--color-plum-light)]">
+                I would like to receive more information about the upcoming Upstream Founder Circle.
+              </span>
+            </label>
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
