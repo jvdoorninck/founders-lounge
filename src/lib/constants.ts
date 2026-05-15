@@ -51,8 +51,8 @@ export const PHASE_ORDER: Record<string, number> = {
   "Exited / post-exit": 5,
 };
 
-// Customize INDUSTRY_TRACK_OPTIONS for your event.
 export const INDUSTRY_TRACK_OPTIONS = [
+  "Port & Maritime",
   "Health & Wellbeing",
   "Energy & Climate",
   "AI & Data",
@@ -64,10 +64,13 @@ export const INDUSTRY_TRACK_OPTIONS = [
 
 export function getEventSlots(): string[] {
   const slots = process.env.EVENT_SLOTS;
-  return slots
+  const base = slots
     ? slots.split(",").map((s) => s.trim())
     : ["10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00",
        "14:00-15:00", "15:00-16:00", "16:00-17:00", "17:00-18:00"];
+  const extra = "Founders Get Together April 10th";
+  const filtered = base.filter((s) => s !== extra);
+  return [extra, ...filtered];
 }
 
 // Short labels for match reason generation

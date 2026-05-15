@@ -105,6 +105,7 @@ function getPhaseScore(a: FounderData, b: FounderData): number {
 
 function getIndustryScore(a: FounderData, b: FounderData): { score: number; sharedTracks: string[] } {
   const groups = [
+    ["port & maritime"],
     ["health & wellbeing"],
     ["energy & climate"],
     ["ai & data"],
