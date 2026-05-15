@@ -37,7 +37,7 @@ export const PHASE_OPTIONS = [
   "Seed (first customers, finding PMF)",
   "Series A (scaling)",
   "Series B+ (growth)",
-  "Bootstrapped / profitable",
+  "Bootstrapped",
   "Exited / post-exit",
 ] as const;
 
@@ -47,7 +47,7 @@ export const PHASE_ORDER: Record<string, number> = {
   "Seed (first customers, finding PMF)": 2,
   "Series A (scaling)": 3,
   "Series B+ (growth)": 4,
-  "Bootstrapped / profitable": 3, // roughly Series A equivalent
+  "Bootstrapped": 3,
   "Exited / post-exit": 5,
 };
 
