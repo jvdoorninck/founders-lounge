@@ -55,11 +55,7 @@ export const INDUSTRY_TRACK_OPTIONS = [
   "Port & Maritime",
   "Health & Wellbeing",
   "Energy & Climate",
-  "AI & Data",
-  "Fintech & Legal",
-  "Enterprise Software & Infrastructure",
-  "Consumer & Lifestyle",
-  "Other",
+  "Track agnostic",
 ] as const;
 
 export function getEventSlots(): string[] {

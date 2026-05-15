@@ -133,8 +133,8 @@ function getIndustryScore(a: FounderData, b: FounderData): { score: number; shar
   }
 
   // Fall back to industryTrack (user-selected during registration)
-  const aTracks = a.industryTrack.filter((t) => t !== "Other");
-  const bTracks = b.industryTrack.filter((t) => t !== "Other");
+  const aTracks = a.industryTrack.filter((t) => t !== "Track agnostic");
+  const bTracks = b.industryTrack.filter((t) => t !== "Track agnostic");
   const sharedTracks = aTracks.filter((t) => bTracks.includes(t));
 
   if (sharedTracks.length >= 2) return { score: 10, sharedTracks };
