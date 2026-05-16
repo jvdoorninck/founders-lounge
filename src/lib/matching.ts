@@ -32,17 +32,33 @@ function parseFounder(f: {
 }
 
 function getComplementaryScore(a: FounderData, b: FounderData): { score: number; pairs: [string, string][]; aToBPairs: [string, string][]; bToAPairs: [string, string][] } {
+  // Identify conflicting pairs: both seek the same asymmetric need but neither can provide the offer.
+  // These are excluded from scoring — they don't count for or against the match.
+  const conflictedNeeds = new Set(
+    COMPLEMENTARY_PAIRS
+      .filter(([need, offer]) => need !== offer)
+      .filter(([need, offer]) =>
+        a.lookingFor.includes(need) &&
+        b.lookingFor.includes(need) &&
+        !a.offering.includes(offer) &&
+        !b.offering.includes(offer)
+      )
+      .map(([need]) => need)
+  );
+
   const aToBPairs: [string, string][] = [];
   const bToAPairs: [string, string][] = [];
 
-  // Check A's needs vs B's offerings
+  // Check A's needs vs B's offerings (skip conflicted needs)
   for (const [need, offer] of COMPLEMENTARY_PAIRS) {
+    if (conflictedNeeds.has(need)) continue;
     if (a.lookingFor.includes(need) && b.offering.includes(offer)) {
       aToBPairs.push([need, offer]);
     }
   }
-  // Check B's needs vs A's offerings
+  // Check B's needs vs A's offerings (skip conflicted needs)
   for (const [need, offer] of COMPLEMENTARY_PAIRS) {
+    if (conflictedNeeds.has(need)) continue;
     if (b.lookingFor.includes(need) && a.offering.includes(offer)) {
       bToAPairs.push([need, offer]);
     }
@@ -341,12 +357,6 @@ export async function runMatching(): Promise<{ generated: number }> {
       if ((confirmedCount[a.id] || 0) >= 2) continue;
       if ((confirmedCount[b.id] || 0) >= 2) continue;
 
-      // Skip pairs where both are seeking advice but neither can give it
-      const aSeeksAdvice = a.lookingFor.includes("Advice from someone further in the journey");
-      const bSeeksAdvice = b.lookingFor.includes("Advice from someone further in the journey");
-      const aOffersAdvice = a.offering.includes("Been there, open to give advice");
-      const bOffersAdvice = b.offering.includes("Been there, open to give advice");
-      if (aSeeksAdvice && bSeeksAdvice && !aOffersAdvice && !bOffersAdvice) continue;
 
       const aWithAvailable = { ...a, availableSlots: getAvailableSlotsForFounder(a) };
       const bWithAvailable = { ...b, availableSlots: getAvailableSlotsForFounder(b) };
